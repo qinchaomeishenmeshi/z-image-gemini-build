@@ -1,0 +1,5 @@
+{
+  "name": "Z-Image Studio",
+  "description": "A professional AI image generation interface inspired by ComfyUI, featuring a masonry gallery and custom backend integration capabilities.",
+  "requestFramePermissions": []
+}
