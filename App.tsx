@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ControlPanel } from './components/ControlPanel';
 import { Gallery } from './components/Gallery';
-import { SettingsModal } from './components/SettingsModal';
 import { ImageViewer } from './components/ImageViewer';
-import { GeneratedImage, AspectRatio, AppSettings } from './types';
+import { GeneratedImage } from './types';
 import { ImageService } from './services/imageService';
 
 const App: React.FC = () => {
@@ -12,14 +11,7 @@ const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [history, setHistory] = useState<GeneratedImage[]>([]);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<GeneratedImage | null>(null);
-  
-  // Settings
-  const [settings, setSettings] = useState<AppSettings>({
-    useCustomBackend: false,
-    customBackendUrl: ''
-  });
 
   // Load history from local storage on mount
   useEffect(() => {
@@ -45,11 +37,9 @@ const App: React.FC = () => {
     try {
       let imageUrl = '';
       
-      // Pass the custom backend URL if enabled, otherwise undefined
-      // The service layer handles the default URL and environment proxy logic
-      const customUrl = settings.useCustomBackend ? settings.customBackendUrl : undefined;
-      
-      imageUrl = await ImageService.generateImage(prompt, customUrl);
+      // Since settings logic is removed, we just call generateImage without custom URL
+      // The service layer handles environment proxy logic
+      imageUrl = await ImageService.generateImage(prompt);
 
       const newImage: GeneratedImage = {
         id: crypto.randomUUID(),
@@ -80,7 +70,7 @@ const App: React.FC = () => {
            }}>
       </div>
 
-      <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+      <Header />
       
       <main className="container mx-auto px-4 py-8 relative z-10 max-w-7xl">
         <div className="flex flex-col gap-8">
@@ -110,13 +100,6 @@ const App: React.FC = () => {
             </section>
         </div>
       </main>
-
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onSave={setSettings}
-      />
 
       <ImageViewer 
         image={viewingImage} 

@@ -10,10 +10,9 @@ export const ImageService = {
    * Handles the async task polling flow.
    *
    * @param prompt The text prompt for image generation.
-   * @param customBackendUrl Optional custom URL (ignored for now as we use proxy, but kept for interface compatibility)
    * @returns The URL of the generated image.
    */
-  generateImage: async (prompt: string, customBackendUrl?: string): Promise<string> => {
+  generateImage: async (prompt: string): Promise<string> => {
     // 1. Create Task
     const task = await ImageService.createTask({ prompt })
     console.log('Task created:', task)

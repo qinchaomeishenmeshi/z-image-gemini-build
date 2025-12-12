@@ -1,8 +1,8 @@
 /*
- * @Author: qinzhaoxuan 
+ * @Author: qinzhaoxuan
  * @Date: 2025-12-11 10:01:04
  * @LastEditors: qinzhaoxuan
- * @LastEditTime: 2025-12-12 17:50:20
+ * @LastEditTime: 2025-12-12 17:57:01
  * @Description: file content
  * @FilePath: /z-image-gemini-build/types.ts
  */
@@ -13,12 +13,6 @@ export interface GeneratedImage {
   timestamp: number
   width?: number
   height?: number
-}
-
-export interface AppSettings {
-  useCustomBackend: boolean
-  customBackendUrl: string
-  apiKey?: string // Optional override for Gemini Key if we wanted UI entry (not used here per rules, but good for structure)
 }
 
 export enum AspectRatio {
