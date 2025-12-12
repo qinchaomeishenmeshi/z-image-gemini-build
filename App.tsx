@@ -5,13 +5,11 @@ import { Gallery } from './components/Gallery';
 import { SettingsModal } from './components/SettingsModal';
 import { ImageViewer } from './components/ImageViewer';
 import { GeneratedImage, AspectRatio, AppSettings } from './types';
-import { generateImageWithGemini, generateImageCustomBackend } from './services/gemini';
+import { ImageService } from './services/imageService';
 
 const App: React.FC = () => {
   // State
   const [prompt, setPrompt] = useState('');
-  const [negativePrompt, setNegativePrompt] = useState('');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Square);
   const [isGenerating, setIsGenerating] = useState(false);
   const [history, setHistory] = useState<GeneratedImage[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -47,19 +45,17 @@ const App: React.FC = () => {
     try {
       let imageUrl = '';
       
-      if (settings.useCustomBackend && settings.customBackendUrl) {
-         imageUrl = await generateImageCustomBackend(settings.customBackendUrl, prompt, negativePrompt, aspectRatio);
-      } else {
-         imageUrl = await generateImageWithGemini(prompt, negativePrompt, aspectRatio);
-      }
+      // Pass the custom backend URL if enabled, otherwise undefined
+      // The service layer handles the default URL and environment proxy logic
+      const customUrl = settings.useCustomBackend ? settings.customBackendUrl : undefined;
+      
+      imageUrl = await ImageService.generateImage(prompt, customUrl);
 
       const newImage: GeneratedImage = {
         id: crypto.randomUUID(),
         url: imageUrl,
         prompt: prompt.trim(),
-        negativePrompt: negativePrompt.trim(),
-        timestamp: Date.now(),
-        aspectRatio: aspectRatio
+        timestamp: Date.now()
       };
 
       setHistory(prev => [newImage, ...prev]);
@@ -93,10 +89,6 @@ const App: React.FC = () => {
                <ControlPanel 
                  prompt={prompt}
                  setPrompt={setPrompt}
-                 negativePrompt={negativePrompt}
-                 setNegativePrompt={setNegativePrompt}
-                 aspectRatio={aspectRatio}
-                 setAspectRatio={setAspectRatio}
                  onGenerate={handleGenerate}
                  isGenerating={isGenerating}
                />

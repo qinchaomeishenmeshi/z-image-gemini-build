@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/api/n8n': {
+            target: 'https://n8n.cherishxn.cloud',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/n8n/, ''),
+            secure: false
+          }
+        }
       },
       plugins: [react()],
       define: {

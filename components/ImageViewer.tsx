@@ -33,7 +33,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ image, onClose }) => {
                 <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-200 font-medium truncate">{image.prompt}</p>
                     <p className="text-xs text-gray-500 font-mono mt-1">
-                        {new Date(image.timestamp).toLocaleString()} • {image.aspectRatio}
+                        {new Date(image.timestamp).toLocaleString()}
                     </p>
                 </div>
                 <a 

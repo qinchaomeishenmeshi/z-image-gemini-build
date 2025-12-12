@@ -40,8 +40,7 @@ export const Gallery: React.FC<GalleryProps> = ({ images, onDelete, onView }) =>
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
              <p className="text-xs text-gray-200 line-clamp-2 mb-2 font-mono">{img.prompt}</p>
-             <div className="flex justify-between items-center">
-                <span className="text-[10px] text-gray-400 font-mono bg-black/50 px-1.5 py-0.5 rounded">{img.aspectRatio}</span>
+             <div className="flex justify-end items-center">
                 <div className="flex gap-2">
                     <button 
                         onClick={(e) => { e.stopPropagation(); onDelete(img.id); }}
