@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ControlPanel } from './components/ControlPanel';
 import { Gallery } from './components/Gallery';
@@ -13,39 +13,67 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<GeneratedImage[]>([]);
   const [viewingImage, setViewingImage] = useState<GeneratedImage | null>(null);
 
-  // Load history from local storage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('z-image-history');
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse history", e);
-      }
-    }
-  }, []);
+  // Pagination State
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Save history to local storage on update
+  const loadHistory = useCallback(async (isInitial = false) => {
+    // Prevent loading if already loading or no more data (unless it's an initial force load)
+    if (isLoadingHistory || (!isInitial && !hasMore)) return;
+
+    setIsLoadingHistory(true);
+    try {
+      const limit = isInitial ? 15 : 5;
+      // If initial, offset 0. If loading more, offset is current count.
+      // Note: This assumes no new items are added externally.
+      const offset = isInitial ? 0 : history.length;
+      
+      const tasks = await ImageService.getHistory(limit, offset);
+      
+      const mappedImages: GeneratedImage[] = tasks
+        .filter(t => t.status === 'COMPLETED' && t.result_url)
+        .map(t => ({
+          id: t.id,
+          url: t.result_url!,
+          prompt: t.prompt,
+          timestamp: new Date(t.created_at).getTime(),
+          width: t.width,
+          height: t.height
+        }));
+
+      if (tasks.length < limit) {
+        setHasMore(false);
+      }
+
+      setHistory(prev => isInitial ? mappedImages : [...prev, ...mappedImages]);
+    } catch (error) {
+      console.error("Failed to load history", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [history.length, hasMore, isLoadingHistory]);
+
+  // Initial Load
   useEffect(() => {
-    localStorage.setItem('z-image-history', JSON.stringify(history));
-  }, [history]);
+    loadHistory(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
     try {
-      let imageUrl = '';
-      
-      // Since settings logic is removed, we just call generateImage without custom URL
-      // The service layer handles environment proxy logic
-      imageUrl = await ImageService.generateImage(prompt);
+      // The service now returns the full Task object
+      const task = await ImageService.generateImage(prompt);
 
       const newImage: GeneratedImage = {
-        id: crypto.randomUUID(),
-        url: imageUrl,
-        prompt: prompt.trim(),
-        timestamp: Date.now()
+        id: task.id,
+        url: task.result_url!,
+        prompt: task.prompt,
+        timestamp: new Date(task.created_at).getTime(),
+        width: task.width,
+        height: task.height
       };
 
       setHistory(prev => [newImage, ...prev]);
@@ -57,6 +85,8 @@ const App: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
+    // Currently only deletes from local view
+    // TODO: Implement API delete if available
     setHistory(prev => prev.filter(img => img.id !== id));
   };
 
@@ -89,13 +119,16 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-3 mb-4 border-b border-[#2d2d2d] pb-2">
                     <h2 className="text-xl font-bold text-gray-100">Creation History</h2>
                     <span className="text-xs font-mono text-gray-500 bg-[#1e1e1e] px-2 py-1 rounded-full border border-[#2d2d2d]">
-                        {history.length} items
+                        {history.length} items loaded
                     </span>
                 </div>
                 <Gallery 
                     images={history} 
                     onDelete={handleDelete}
                     onView={setViewingImage}
+                    onLoadMore={() => loadHistory(false)}
+                    hasMore={hasMore}
+                    isLoading={isLoadingHistory}
                 />
             </section>
         </div>

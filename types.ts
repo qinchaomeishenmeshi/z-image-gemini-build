@@ -2,7 +2,7 @@
  * @Author: qinzhaoxuan
  * @Date: 2025-12-11 10:01:04
  * @LastEditors: qinzhaoxuan
- * @LastEditTime: 2025-12-12 17:57:01
+ * @LastEditTime: 2025-12-13 03:16:03
  * @Description: file content
  * @FilePath: /z-image-gemini-build/types.ts
  */

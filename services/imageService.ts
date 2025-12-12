@@ -10,9 +10,9 @@ export const ImageService = {
    * Handles the async task polling flow.
    *
    * @param prompt The text prompt for image generation.
-   * @returns The URL of the generated image.
+   * @returns The completed Task object.
    */
-  generateImage: async (prompt: string): Promise<string> => {
+  generateImage: async (prompt: string): Promise<Task> => {
     // 1. Create Task
     const task = await ImageService.createTask({ prompt })
     console.log('Task created:', task)
@@ -32,7 +32,7 @@ export const ImageService = {
   /**
    * Polls the task status until completion or failure.
    */
-  pollTask: async (taskId: string, intervalMs = 2000, maxAttempts = 60): Promise<string> => {
+  pollTask: async (taskId: string, intervalMs = 2000, maxAttempts = 60): Promise<Task> => {
     let attempts = 0
 
     while (attempts < maxAttempts) {
@@ -43,7 +43,7 @@ export const ImageService = {
         if (!task.result_url) {
           throw new Error('Task completed but no result URL provided')
         }
-        return task.result_url
+        return task
       }
 
       if (task.status === TaskStatus.FAILED) {
@@ -64,5 +64,13 @@ export const ImageService = {
   getTask: async (taskId: string): Promise<Task> => {
     const url = `${API_BASE_PATH}/tasks/${taskId}`
     return await ApiClient.get<Task>(url)
+  },
+
+  /**
+   * Fetches the generation history.
+   */
+  getHistory: async (limit: number = 20, offset: number = 0): Promise<Task[]> => {
+    const url = `${API_BASE_PATH}/history?limit=${limit}&offset=${offset}`
+    return await ApiClient.get<Task[]>(url)
   }
 }
