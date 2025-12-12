@@ -1,73 +1,69 @@
 import { ApiClient } from './api'
+import { Task, TaskCreate, TaskStatus } from '../types'
 
 // Configuration constants
-const DEFAULT_N8N_WEBHOOK_ID = 'e47176dd-28ad-42f8-bf31-b7a091a65a9d'
-const PRODUCTION_BASE_URL = 'https://n8n.cherishxn.cloud/webhook-test'
-const DEV_PROXY_BASE_URL = '/api/n8n/webhook-test'
-
-interface N8nResponse {
-  output?: string
-  url?: string
-  image?: string
-  [key: string]: any
-}
+const API_BASE_PATH = '/api/v1'
 
 export const ImageService = {
   /**
-   * Generates an image based on the provided prompt using N8N webhook.
+   * Generates an image based on the provided prompt using the local API.
+   * Handles the async task polling flow.
    *
    * @param prompt The text prompt for image generation.
-   * @param customBackendUrl Optional custom URL to override the default endpoint.
+   * @param customBackendUrl Optional custom URL (ignored for now as we use proxy, but kept for interface compatibility)
    * @returns The URL of the generated image.
    */
   generateImage: async (prompt: string, customBackendUrl?: string): Promise<string> => {
-    const url = ImageService.resolveEndpoint(customBackendUrl)
+    // 1. Create Task
+    const task = await ImageService.createTask({ prompt })
+    console.log('Task created:', task)
 
-    try {
-      const data = await ApiClient.post<N8nResponse | N8nResponse[]>(url, { prompt })
-
-      console.log('Image Generation Response:', data)
-
-      // Normalize response: handle both object and array returns
-      const responseObj = Array.isArray(data) ? data[0] : data
-
-      console.log('Normalized Response Object:', responseObj)
-
-      // Attempt to find the image URL in various common fields
-      const imageUrl =
-        responseObj?.output || responseObj?.url || responseObj?.image || responseObj?.data
-
-      if (!imageUrl) {
-        console.warn('Invalid response structure. Full data:', JSON.stringify(data, null, 2))
-        throw new Error(
-          `Response did not contain a recognized image URL field (output, url, image). Received keys: ${Object.keys(
-            responseObj || {}
-          ).join(', ')}`
-        )
-      }
-
-      return imageUrl
-    } catch (error) {
-      console.error('Image Generation Service Error:', error)
-      throw error
-    }
+    // 2. Poll for completion
+    return await ImageService.pollTask(task.id)
   },
 
   /**
-   * Resolves the correct API endpoint based on environment and custom configuration.
+   * Creates a generation task.
    */
-  resolveEndpoint: (customUrl?: string): string => {
-    // 1. If user provides a custom URL, use it directly.
-    if (customUrl && customUrl.trim()) {
-      return customUrl.trim()
+  createTask: async (payload: TaskCreate): Promise<Task> => {
+    const url = `${API_BASE_PATH}/generate`
+    return await ApiClient.post<Task>(url, payload)
+  },
+
+  /**
+   * Polls the task status until completion or failure.
+   */
+  pollTask: async (taskId: string, intervalMs = 2000, maxAttempts = 60): Promise<string> => {
+    let attempts = 0
+
+    while (attempts < maxAttempts) {
+      const task = await ImageService.getTask(taskId)
+      console.log(`Polling task ${taskId}: ${task.status} (${task.progress}%)`)
+
+      if (task.status === TaskStatus.COMPLETED) {
+        if (!task.result_url) {
+          throw new Error('Task completed but no result URL provided')
+        }
+        return task.result_url
+      }
+
+      if (task.status === TaskStatus.FAILED) {
+        throw new Error(`Task failed: ${task.error_msg || 'Unknown error'}`)
+      }
+
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+      attempts++
     }
 
-    // 2. Otherwise, determine the URL based on the environment (Dev vs Prod)
-    // using Vite's import.meta.env
-    if (import.meta.env.DEV) {
-      return `${DEV_PROXY_BASE_URL}/${DEFAULT_N8N_WEBHOOK_ID}`
-    }
+    throw new Error('Task generation timed out')
+  },
 
-    return `${PRODUCTION_BASE_URL}/${DEFAULT_N8N_WEBHOOK_ID}`
+  /**
+   * Gets the current status of a task.
+   */
+  getTask: async (taskId: string): Promise<Task> => {
+    const url = `${API_BASE_PATH}/tasks/${taskId}`
+    return await ApiClient.get<Task>(url)
   }
 }

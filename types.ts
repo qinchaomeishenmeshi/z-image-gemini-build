@@ -1,3 +1,11 @@
+/*
+ * @Author: qinzhaoxuan 
+ * @Date: 2025-12-11 10:01:04
+ * @LastEditors: qinzhaoxuan
+ * @LastEditTime: 2025-12-12 17:50:20
+ * @Description: file content
+ * @FilePath: /z-image-gemini-build/types.ts
+ */
 export interface GeneratedImage {
   id: string
   url: string
@@ -22,3 +30,32 @@ export enum AspectRatio {
 }
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error'
+
+export enum TaskStatus {
+  QUEUED = 'QUEUED',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED'
+}
+
+export interface Task {
+  id: string
+  prompt: string
+  width: number
+  height: number
+  seed: number
+  status: TaskStatus
+  progress: number
+  current_step?: string | null
+  result_url?: string | null
+  error_msg?: string | null
+  created_at: string
+  prompt_id?: string | null
+}
+
+export interface TaskCreate {
+  prompt: string
+  width?: number
+  height?: number
+  seed?: number
+}
