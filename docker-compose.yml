@@ -4,7 +4,7 @@ services:
   frontend:
     build: .
     ports:
-      - "80:80"
+      - "8002:8002"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     # If your backend is running on the host machine, use host.docker.internal
