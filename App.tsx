@@ -10,6 +10,7 @@ const App: React.FC = () => {
   // State
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [history, setHistory] = useState<GeneratedImage[]>([]);
   const [viewingImage, setViewingImage] = useState<GeneratedImage | null>(null);
 
@@ -63,9 +64,11 @@ const App: React.FC = () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
+    setGenerationProgress(0);
     try {
-      // The service now returns the full Task object
-      const task = await ImageService.generateImage(prompt);
+      const task = await ImageService.generateImage(prompt, (t) => {
+        setGenerationProgress(typeof t.progress === 'number' ? t.progress : 0);
+      });
 
       const newImage: GeneratedImage = {
         id: task.id,
@@ -81,6 +84,7 @@ const App: React.FC = () => {
       alert(`Generation Failed: ${(error as Error).message}`);
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(0);
     }
   };
 
@@ -111,6 +115,7 @@ const App: React.FC = () => {
                  setPrompt={setPrompt}
                  onGenerate={handleGenerate}
                  isGenerating={isGenerating}
+                 progress={generationProgress}
                />
             </section>
 

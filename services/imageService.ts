@@ -3,6 +3,8 @@ import { Task, TaskCreate, TaskStatus } from '../types'
 
 // Configuration constants
 const API_BASE_PATH = '/api/v1'
+const DEFAULT_POLL_INTERVAL_MS = 2000
+const DEFAULT_POLL_TIMEOUT_MS = 10 * 60 * 1000
 
 export const ImageService = {
   /**
@@ -12,13 +14,10 @@ export const ImageService = {
    * @param prompt The text prompt for image generation.
    * @returns The completed Task object.
    */
-  generateImage: async (prompt: string): Promise<Task> => {
-    // 1. Create Task
+  generateImage: async (prompt: string, onProgress?: (task: Task) => void): Promise<Task> => {
     const task = await ImageService.createTask({ prompt })
-    console.log('Task created:', task)
-
-    // 2. Poll for completion
-    return await ImageService.pollTask(task.id)
+    const attempts = Math.ceil(DEFAULT_POLL_TIMEOUT_MS / DEFAULT_POLL_INTERVAL_MS)
+    return await ImageService.pollTask(task.id, DEFAULT_POLL_INTERVAL_MS, attempts, onProgress)
   },
 
   /**
@@ -32,29 +31,28 @@ export const ImageService = {
   /**
    * Polls the task status until completion or failure.
    */
-  pollTask: async (taskId: string, intervalMs = 2000, maxAttempts = 60): Promise<Task> => {
+  pollTask: async (
+    taskId: string,
+    intervalMs = DEFAULT_POLL_INTERVAL_MS,
+    maxAttempts = Math.ceil(DEFAULT_POLL_TIMEOUT_MS / DEFAULT_POLL_INTERVAL_MS),
+    onProgress?: (task: Task) => void
+  ): Promise<Task> => {
     let attempts = 0
-
     while (attempts < maxAttempts) {
       const task = await ImageService.getTask(taskId)
-      console.log(`Polling task ${taskId}: ${task.status} (${task.progress}%)`)
-
+      if (onProgress) onProgress(task)
       if (task.status === TaskStatus.COMPLETED) {
         if (!task.result_url) {
           throw new Error('Task completed but no result URL provided')
         }
         return task
       }
-
       if (task.status === TaskStatus.FAILED) {
         throw new Error(`Task failed: ${task.error_msg || 'Unknown error'}`)
       }
-
-      // Wait before next poll
       await new Promise((resolve) => setTimeout(resolve, intervalMs))
       attempts++
     }
-
     throw new Error('Task generation timed out')
   },
 

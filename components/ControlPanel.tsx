@@ -8,13 +8,15 @@ interface ControlPanelProps {
   setPrompt: (val: string) => void;
   onGenerate: () => void;
   isGenerating: boolean;
+  progress?: number;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
   prompt,
   setPrompt,
   onGenerate,
-  isGenerating
+  isGenerating,
+  progress
 }) => {
   return (
     <div className="bg-[#1e1e1e] border border-[#2d2d2d] rounded-lg p-4 shadow-xl mb-6">
@@ -39,6 +41,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 onClick={onGenerate} 
                 disabled={!prompt.trim()} 
                 isLoading={isGenerating}
+                progress={progress}
                 size="lg"
                 className="w-full md:w-auto shadow-[0_0_15px_rgba(79,70,229,0.3)]"
             >
