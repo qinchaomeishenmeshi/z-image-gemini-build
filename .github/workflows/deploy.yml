@@ -27,7 +27,7 @@ jobs:
             git pull origin main
 
             # 3. 重新构建并重启容器
-            sudo docker-compose up -d --build
+            sudo docker compose up -d --build
 
             # 4. 清理无用的镜像 (可选)
             sudo docker image prune -f
