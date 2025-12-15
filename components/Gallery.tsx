@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GeneratedImage } from '../types';
-import { Download, Trash2, Maximize2, Loader } from 'lucide-react';
+import { Download, Maximize2, Loader, Copy, Check } from 'lucide-react';
 
 interface GalleryProps {
   images: GeneratedImage[];
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
   onView: (image: GeneratedImage) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
@@ -13,13 +13,24 @@ interface GalleryProps {
 
 export const Gallery: React.FC<GalleryProps> = ({ 
   images, 
-  onDelete, 
   onView,
   onLoadMore,
   hasMore = false,
   isLoading = false
 }) => {
   const loaderRef = useRef<HTMLDivElement>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyPrompt = async (e: React.MouseEvent, prompt: string, id: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy prompt:', err);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -74,16 +85,24 @@ export const Gallery: React.FC<GalleryProps> = ({
             />
             
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
-               <p className="text-xs text-gray-200 line-clamp-2 mb-2 font-mono">{img.prompt}</p>
+               <div 
+                 className="mb-2 cursor-pointer hover:bg-black/40 p-1 rounded transition-colors group/text"
+                 onClick={(e) => handleCopyPrompt(e, img.prompt, img.id)}
+                 title="Click to copy prompt"
+               >
+                 <p className="text-xs text-gray-200 line-clamp-2 font-mono group-hover/text:text-white transition-colors">
+                   {img.prompt}
+                 </p>
+                 <div className="flex items-center gap-1 mt-1 text-[10px] text-indigo-400 opacity-0 group-hover/text:opacity-100 transition-opacity">
+                   {copiedId === img.id ? (
+                     <><Check className="w-3 h-3" /> Copied!</>
+                   ) : (
+                     <><Copy className="w-3 h-3" /> Click to copy</>
+                   )}
+                 </div>
+               </div>
                <div className="flex justify-end items-center">
                   <div className="flex gap-2">
-                      <button 
-                          onClick={(e) => { e.stopPropagation(); onDelete(img.id); }}
-                          className="p-1.5 bg-red-900/80 hover:bg-red-700 text-white rounded transition-colors"
-                          title="Delete"
-                      >
-                          <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                       <a 
                           href={img.url} 
                           download={`z-image-${img.id}.png`}
